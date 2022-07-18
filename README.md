@@ -1,4 +1,5 @@
 # ExBanking
+[![Code Checking](https://github.com/maxmaccari/ex_banking/actions/workflows/code-checking.yml/badge.svg)](https://github.com/maxmaccari/ex_banking/actions/workflows/code-checking.yml)
 
 **TODO: Add description**
 
