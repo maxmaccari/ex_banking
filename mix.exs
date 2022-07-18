@@ -7,7 +7,8 @@ defmodule ExBanking.MixProject do
       version: "0.1.0",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: aliases()
     ]
   end
 
@@ -24,6 +25,12 @@ defmodule ExBanking.MixProject do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      check: ["format --dry-run --check-formatted", "credo", "dialyzer"]
     ]
   end
 end
