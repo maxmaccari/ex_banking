@@ -10,22 +10,31 @@ defmodule ExBanking.User.Account do
 
   def new(currency) do
     %__MODULE__{
-      balance: 0,
+      balance: Decimal.new(0),
       currency: String.upcase(currency)
     }
   end
 
-  def balance(%__MODULE__{balance: balance}), do: balance
+  def balance(%__MODULE__{balance: balance}), do: Decimal.to_float(balance)
 
   def deposit(%__MODULE__{balance: balance} = account, amount) do
-    %{account | balance: balance + amount}
-  end
+    new_balance = Decimal.add(balance, normalize_amount(amount))
 
-  def withdraw(%__MODULE__{balance: balance}, amount)
-      when amount > balance,
-      do: :insuficient_funds
+    %{account | balance: new_balance}
+  end
 
   def withdraw(%__MODULE__{balance: balance} = account, amount) do
-    %{account | balance: balance - amount}
+    new_balance = Decimal.sub(balance, normalize_amount(amount))
+
+    if Decimal.positive?(new_balance) do
+      %{account | balance: new_balance}
+    else
+      :insuficient_funds
+    end
   end
+
+  defp to_decimal(number) when is_float(number), do: Decimal.from_float(number)
+  defp to_decimal(number), do: Decimal.new(number)
+
+  defp normalize_amount(amount), do: amount |> to_decimal() |> Decimal.round(2, :down)
 end
