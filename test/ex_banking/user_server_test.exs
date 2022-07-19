@@ -45,4 +45,23 @@ defmodule ExBanking.UserServerTest do
       assert UserServer.balance(@name, "GBP") == 150.0
     end
   end
+
+  describe "withdraw/3" do
+    test "should decrement the balance of the server" do
+      {:ok, _} = UserServer.start_link(@name)
+      UserServer.deposit(@name, "USD", 200)
+
+      assert {:ok, 100.0} = UserServer.withdraw(@name, "USD", 100)
+      assert {:ok, 50.0} = UserServer.withdraw(@name, "USD", 50)
+      assert UserServer.balance(@name, "USD") == 50.0
+    end
+
+    test "should not decrement the balance of the server in case of not having enough money" do
+      {:ok, _} = UserServer.start_link(@name)
+      UserServer.deposit(@name, "USD", 100)
+
+      assert {:error, :not_enough_money} = UserServer.withdraw(@name, "USD", 150)
+      assert UserServer.balance(@name, "USD") == 100.0
+    end
+  end
 end

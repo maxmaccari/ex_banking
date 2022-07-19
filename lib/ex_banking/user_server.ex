@@ -23,6 +23,10 @@ defmodule ExBanking.UserServer do
     GenServer.call(via_tuple(name), {:deposit, currency, amount})
   end
 
+  def withdraw(name, currency, amount) do
+    GenServer.call(via_tuple(name), {:withdraw, currency, amount})
+  end
+
   @impl true
   def init(name) do
     {:ok, User.new(name)}
@@ -36,5 +40,15 @@ defmodule ExBanking.UserServer do
   def handle_call({:deposit, currency, amount}, _from, user) do
     user = User.deposit(user, currency, amount)
     {:reply, {:ok, User.balance(user, currency)}, user}
+  end
+
+  def handle_call({:withdraw, currency, amount}, _from, user) do
+    case User.withdraw(user, currency, amount) do
+      %User{} = user ->
+        {:reply, {:ok, User.balance(user, currency)}, user}
+
+      :not_enough_money ->
+        {:reply, {:error, :not_enough_money}, user}
+    end
   end
 end
