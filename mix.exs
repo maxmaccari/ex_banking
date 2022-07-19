@@ -36,7 +36,8 @@ defmodule ExBanking.MixProject do
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:excoveralls, "~> 0.10", only: :test},
-      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:decimal, "~> 2.0"}
     ]
   end
 
