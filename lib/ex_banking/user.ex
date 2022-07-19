@@ -40,7 +40,7 @@ defmodule ExBanking.User do
   end
 
   @spec withdraw(t(), String.t(), number) ::
-          :insuficient_funds | t()
+          :not_enough_money | t()
   def withdraw(%__MODULE__{accounts: accounts} = user, currency, amount) do
     currency = String.upcase(currency)
     account = Map.get(accounts, currency, Account.new(currency))
@@ -49,8 +49,8 @@ defmodule ExBanking.User do
       %Account{} = account ->
         %{user | accounts: Map.put(accounts, currency, account)}
 
-      :insuficient_funds ->
-        :insuficient_funds
+      :not_enough_money ->
+        :not_enough_money
     end
   end
 end

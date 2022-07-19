@@ -55,7 +55,7 @@ defmodule ExBanking.UserTest do
     test "should return :insuficient_funds in case of amount bigger than balance" do
       user = "My Name" |> User.new() |> User.deposit("USD", 100)
 
-      assert :insuficient_funds = User.withdraw(user, "USD", 150)
+      assert :not_enough_money = User.withdraw(user, "USD", 150)
     end
   end
 end

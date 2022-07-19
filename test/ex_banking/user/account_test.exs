@@ -53,7 +53,7 @@ defmodule ExBanking.User.AccountTest do
     end
 
     test "should return error when balance is not available" do
-      assert :insuficient_funds = Account.withdraw(@account, 120.0)
+      assert :not_enough_money = Account.withdraw(@account, 120.0)
     end
 
     test "should work with integer" do

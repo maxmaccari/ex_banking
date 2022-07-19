@@ -39,7 +39,7 @@ defmodule ExBanking.User.Account do
     if Decimal.positive?(new_balance) do
       %{account | balance: new_balance}
     else
-      :insuficient_funds
+      :not_enough_money
     end
   end
 
