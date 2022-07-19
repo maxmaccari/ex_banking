@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        otp: ['24']
+        elixir: ['1.13']
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Project
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
+    - name: Restore dependencies cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-mix-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock'))}}
+    - name: Install and compile dependencies
+      run: mix do deps.get, deps.compile
+    - name: Compile
+      run: mix compile
+    - name: Run tests and coverage
+      run: mix coveralls
+    - uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: cover
