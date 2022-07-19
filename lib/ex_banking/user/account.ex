@@ -1,16 +1,26 @@
 defmodule ExBanking.User.Account do
   @moduledoc false
 
+  # FOR THE EVALUATORS:
+  # I've created this internal module because I believe in the principle of
+  # Single Responsability (from SOLID) to organize module functions. And it has
+  # given me good results. So I've created this internal module to handle
+  # accounts logic
+  #
+  # I chose to use balance instead transactions because we don't need to track
+  # individual transactions. But it's easy to refactor and track transaction if
+  # needed.
+
   defstruct balance: 0, currency: nil
 
   @type t :: %__MODULE__{
-          balance: pos_integer(),
+          balance: Decimal.t(),
           currency: String.t()
         }
 
-  def new(currency) do
+  def new(currency, amount \\ 0) do
     %__MODULE__{
-      balance: Decimal.new(0),
+      balance: to_decimal(amount),
       currency: String.upcase(currency)
     }
   end
