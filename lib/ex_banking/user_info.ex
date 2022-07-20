@@ -1,20 +1,20 @@
-defmodule ExBanking.User do
+defmodule ExBanking.UserInfo do
   @moduledoc """
-  The User structure.
+  The UserInfo structure.
 
   This structure handle accounts and it currencies.
   """
 
   defstruct name: nil, accounts: %{}
 
-  alias ExBanking.User.Account
+  alias ExBanking.UserInfo.Account
 
   @type t :: %__MODULE__{
           name: String.t(),
           accounts: %{String.t() => Account.t()}
         }
 
-  @spec new(String.t()) :: ExBanking.User.t()
+  @spec new(String.t()) :: t()
   def new(name) do
     %__MODULE__{name: name}
   end

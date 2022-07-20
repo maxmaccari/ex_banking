@@ -1,7 +1,7 @@
-defmodule ExBanking.User.AccountTest do
+defmodule ExBanking.UserInfo.AccountTest do
   use ExUnit.Case
 
-  alias ExBanking.User.Account
+  alias ExBanking.UserInfo.Account
 
   describe "new/1" do
     test "should create a new account with the given currency" do

@@ -1,7 +1,7 @@
 defmodule ExBanking.UserServer do
   use GenServer
 
-  alias ExBanking.User
+  alias ExBanking.UserInfo
 
   def start_link(name) do
     case GenServer.start_link(__MODULE__, [name], name: via_tuple(name)) do
@@ -46,23 +46,23 @@ defmodule ExBanking.UserServer do
 
   @impl true
   def init(name) do
-    {:ok, User.new(name), {:continue, {:load_user, name}}}
+    {:ok, UserInfo.new(name), {:continue, {:load_user, name}}}
   end
 
   @impl true
   def handle_call({:balance, currency}, _from, user) do
-    {:reply, {:ok, User.balance(user, currency)}, user}
+    {:reply, {:ok, UserInfo.balance(user, currency)}, user}
   end
 
   def handle_call({:deposit, currency, amount}, _from, user) do
-    user = User.deposit(user, currency, amount)
-    {:reply, {:ok, User.balance(user, currency)}, user, {:continue, :backup_user}}
+    user = UserInfo.deposit(user, currency, amount)
+    {:reply, {:ok, UserInfo.balance(user, currency)}, user, {:continue, :backup_user}}
   end
 
   def handle_call({:withdraw, currency, amount}, _from, user) do
-    case User.withdraw(user, currency, amount) do
-      %User{} = user ->
-        {:reply, {:ok, User.balance(user, currency)}, user, {:continue, :backup_user}}
+    case UserInfo.withdraw(user, currency, amount) do
+      %UserInfo{} = user ->
+        {:reply, {:ok, UserInfo.balance(user, currency)}, user, {:continue, :backup_user}}
 
       :not_enough_money ->
         {:reply, {:error, :not_enough_money}, user}
@@ -70,9 +70,9 @@ defmodule ExBanking.UserServer do
   end
 
   def handle_call({:send, to, currency, amount, deposit_fun}, _from, user) do
-    with %User{} = new_user <- User.withdraw(user, currency, amount),
+    with %UserInfo{} = new_user <- UserInfo.withdraw(user, currency, amount),
          {:ok, to_user_balance} <- deposit_fun.(to, currency, amount) do
-      {:reply, {:ok, User.balance(new_user, currency), to_user_balance}, new_user,
+      {:reply, {:ok, UserInfo.balance(new_user, currency), to_user_balance}, new_user,
        {:continue, :backup_user}}
     else
       error -> {:reply, handle_send_error(error), user}

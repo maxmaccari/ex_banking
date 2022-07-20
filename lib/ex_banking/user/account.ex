@@ -1,4 +1,4 @@
-defmodule ExBanking.User.Account do
+defmodule ExBanking.UserInfo.Account do
   @moduledoc false
 
   # FOR THE EVALUATORS:
