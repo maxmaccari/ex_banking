@@ -200,6 +200,11 @@ defmodule ExBanking.UserTest do
 
       assert {:error, :error_from_receiver} =
                User.send(from, to, 100, "USD", fn _, _, _ -> {:error, :error_from_receiver} end)
+
+      assert {:error, :too_many_requests_to_receiver} =
+               User.send(from, to, 100, "USD", fn _, _, _ ->
+                 {:error, :too_many_requests_to_user}
+               end)
     end
 
     test "should return :wrong_arguments error with invalid argument types", %{from: from, to: to} do
@@ -227,6 +232,42 @@ defmodule ExBanking.UserTest do
 
       assert {:ok, _} = User.start_link(to)
       assert {:ok, 100.0} = User.balance(to, "USD")
+    end
+  end
+
+  describe "rate limiting" do
+    test "should limit the number of async operations by 10" do
+      from = random_name()
+      to = random_name()
+
+      {:ok, _} = User.start_link(from)
+      {:ok, _} = User.start_link(to)
+
+      operations = [
+        fn -> User.deposit(from, 100, "USD") end,
+        fn -> User.withdraw(from, 100, "USD") end,
+        fn -> User.balance(from, "USD") end,
+        fn -> User.send(from, to, 100, "USD") end
+      ]
+
+      errors =
+        1..1_000
+        |> Enum.map(fn _ -> Task.async(Enum.random(operations)) end)
+        |> Enum.map(&Task.await/1)
+        |> Enum.filter(fn
+          {:error, error} ->
+            error in [
+              :too_many_requests_to_user,
+              :too_many_requests_to_sender,
+              :too_many_requests_to_receiver
+            ]
+
+          _ ->
+            false
+        end)
+
+      assert Enum.any?(errors, &(&1 == {:error, :too_many_requests_to_user}))
+      assert Enum.any?(errors, &(&1 == {:error, :too_many_requests_to_sender}))
     end
   end
 
