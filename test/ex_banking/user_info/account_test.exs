@@ -8,7 +8,7 @@ defmodule ExBanking.UserInfo.AccountTest do
       assert %Account{
                currency: "USD",
                balance: %Decimal{}
-             } = Account.new("usd")
+             } = Account.new("USD")
     end
 
     test "should create a new account with the given currency and initial balance" do
@@ -17,7 +17,7 @@ defmodule ExBanking.UserInfo.AccountTest do
       assert %Account{
                currency: "USD",
                balance: ^expected_balance
-             } = Account.new("usd", 100)
+             } = Account.new("USD", 100)
     end
   end
 

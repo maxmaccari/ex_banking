@@ -16,7 +16,7 @@ defmodule ExBanking.UserInfoTest do
       assert UserInfo.balance(user, "USD") == 0.0
     end
 
-    test "should return the account balance if there's account with the given currency" do
+    test "should return the account balance if there's account with the given currency case sensitive" do
       user = UserInfo.new("My Name")
 
       user = %{
@@ -25,7 +25,7 @@ defmodule ExBanking.UserInfoTest do
       }
 
       assert UserInfo.balance(user, "USD") == 100.0
-      assert UserInfo.balance(user, "usd") == 100.0
+      assert UserInfo.balance(user, "usd") == 0.0
     end
   end
 

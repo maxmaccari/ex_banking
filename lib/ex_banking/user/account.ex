@@ -21,7 +21,7 @@ defmodule ExBanking.UserInfo.Account do
   def new(currency, amount \\ 0) do
     %__MODULE__{
       balance: to_decimal(amount),
-      currency: String.upcase(currency)
+      currency: currency
     }
   end
 
