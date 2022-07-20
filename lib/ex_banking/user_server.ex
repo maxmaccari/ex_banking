@@ -11,7 +11,7 @@ defmodule ExBanking.UserServer do
     end
   end
 
-  defp via_tuple(name) do
+  def via_tuple(name) do
     {:via, Registry, {ExBanking.UserRegistry, name}}
   end
 
@@ -46,7 +46,7 @@ defmodule ExBanking.UserServer do
 
   @impl true
   def init(name) do
-    {:ok, User.new(name)}
+    {:ok, User.new(name), {:continue, {:load_user, name}}}
   end
 
   @impl true
@@ -56,13 +56,13 @@ defmodule ExBanking.UserServer do
 
   def handle_call({:deposit, currency, amount}, _from, user) do
     user = User.deposit(user, currency, amount)
-    {:reply, {:ok, User.balance(user, currency)}, user}
+    {:reply, {:ok, User.balance(user, currency)}, user, {:continue, :backup_user}}
   end
 
   def handle_call({:withdraw, currency, amount}, _from, user) do
     case User.withdraw(user, currency, amount) do
       %User{} = user ->
-        {:reply, {:ok, User.balance(user, currency)}, user}
+        {:reply, {:ok, User.balance(user, currency)}, user, {:continue, :backup_user}}
 
       :not_enough_money ->
         {:reply, {:error, :not_enough_money}, user}
@@ -72,7 +72,8 @@ defmodule ExBanking.UserServer do
   def handle_call({:send, to, currency, amount, deposit_fun}, _from, user) do
     with %User{} = new_user <- User.withdraw(user, currency, amount),
          {:ok, to_user_balance} <- deposit_fun.(to, currency, amount) do
-      {:reply, {:ok, User.balance(new_user, currency), to_user_balance}, new_user}
+      {:reply, {:ok, User.balance(new_user, currency), to_user_balance}, new_user,
+       {:continue, :backup_user}}
     else
       error -> {:reply, handle_send_error(error), user}
     end
@@ -81,4 +82,22 @@ defmodule ExBanking.UserServer do
   defp handle_send_error(:not_enough_money), do: {:error, :not_enough_money}
   defp handle_send_error({:error, :user_does_not_exist}), do: {:error, :receiver_does_not_exist}
   defp handle_send_error(error), do: error
+
+  @impl true
+  def handle_continue({:load_user, name}, default_user) do
+    current_user =
+      case :ets.lookup(ExBanking.UserServer, name) do
+        [] -> default_user
+        [{_key, user}] -> user
+      end
+
+    :ets.insert(ExBanking.UserServer, {name, current_user})
+    {:noreply, current_user}
+  end
+
+  def handle_continue(:backup_user, user) do
+    :ets.insert(ExBanking.UserServer, {user.name, user})
+
+    {:noreply, user}
+  end
 end

@@ -7,6 +7,8 @@ defmodule ExBanking.Application do
 
   @impl true
   def start(_type, _args) do
+    init_user_server_store()
+
     children = [
       {Registry, keys: :unique, name: ExBanking.UserRegistry}
     ]
@@ -15,5 +17,9 @@ defmodule ExBanking.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ExBanking.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp init_user_server_store do
+    :ets.new(ExBanking.UserServer, [:public, :named_table])
   end
 end
