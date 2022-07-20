@@ -8,7 +8,7 @@ defmodule ExBanking.User do
   def start_link(name) when is_binary(name) do
     case GenServer.start_link(__MODULE__, [name], name: via_tuple(name)) do
       {:ok, pid} -> {:ok, pid}
-      {:error, {:already_started, _pid}} -> {:error, :already_started}
+      {:error, {:already_started, _pid}} -> {:error, :user_already_exists}
     end
   end
 
@@ -23,29 +23,42 @@ defmodule ExBanking.User do
   # does not exist is part of the business logic, and catch :exit in this case
   # is a good way to transform one error into a friendly error returning.
 
-  def balance(name, currency) do
+  def balance(name, currency) when is_binary(name) and is_binary(currency) do
     GenServer.call(via_tuple(name), {:balance, currency})
   catch
     :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
   end
 
-  def deposit(name, currency, amount) do
-    GenServer.call(via_tuple(name), {:deposit, currency, amount})
+  def balance(_name, _currency), do: {:error, :wrong_arguments}
+
+  def deposit(name, amount, currency)
+      when is_binary(name) and is_binary(currency) and is_number(amount) do
+    GenServer.call(via_tuple(name), {:deposit, amount, currency})
   catch
     :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
   end
 
-  def withdraw(name, currency, amount) do
-    GenServer.call(via_tuple(name), {:withdraw, currency, amount})
+  def deposit(_name, _amount, _currency), do: {:error, :wrong_arguments}
+
+  def withdraw(name, amount, currency)
+      when is_binary(name) and is_binary(currency) and is_number(amount) do
+    GenServer.call(via_tuple(name), {:withdraw, amount, currency})
   catch
     :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
   end
 
-  def send(from, to, currency, amount, deposit_fun \\ &deposit/3) do
-    GenServer.call(via_tuple(from), {:send, to, currency, amount, deposit_fun})
+  def withdraw(_name, _amount, _currency), do: {:error, :wrong_arguments}
+
+  def send(from, to, amount, currency, deposit_fun \\ &deposit/3)
+
+  def send(from, to, amount, currency, deposit_fun)
+      when is_binary(from) and is_binary(to) and is_binary(currency) and is_number(amount) do
+    GenServer.call(via_tuple(from), {:send, to, amount, currency, deposit_fun})
   catch
     :exit, {:noproc, {GenServer, :call, _}} -> {:error, :sender_does_not_exist}
   end
+
+  def send(_from, _to, _amount, _currency, _fun), do: {:error, :wrong_arguments}
 
   @impl true
   def init(name) do
@@ -57,14 +70,14 @@ defmodule ExBanking.User do
     {:reply, {:ok, UserInfo.balance(user, currency)}, user}
   end
 
-  def handle_call({:deposit, currency, amount}, _from, user) do
+  def handle_call({:deposit, amount, currency}, _from, user) do
     user = UserInfo.deposit(user, currency, amount)
     backup_user(user)
 
     {:reply, {:ok, UserInfo.balance(user, currency)}, user}
   end
 
-  def handle_call({:withdraw, currency, amount}, _from, user) do
+  def handle_call({:withdraw, amount, currency}, _from, user) do
     case UserInfo.withdraw(user, currency, amount) do
       %UserInfo{} = user ->
         backup_user(user)
@@ -75,9 +88,9 @@ defmodule ExBanking.User do
     end
   end
 
-  def handle_call({:send, to, currency, amount, deposit_fun}, _from, user) do
+  def handle_call({:send, to, amount, currency, deposit_fun}, _from, user) do
     with %UserInfo{} = new_user <- UserInfo.withdraw(user, currency, amount),
-         {:ok, to_user_balance} <- deposit_fun.(to, currency, amount) do
+         {:ok, to_user_balance} <- deposit_fun.(to, amount, currency) do
       backup_user(new_user)
       {:reply, {:ok, UserInfo.balance(new_user, currency), to_user_balance}, new_user}
     else

@@ -11,7 +11,7 @@ defmodule ExBanking.UserSupervisorTest do
 
     test "should return error if try to start a server with the same name" do
       assert {:ok, _} = UserSupervisor.start_child("some-another-server")
-      assert {:error, :already_started} = UserSupervisor.start_child("some-another-server")
+      assert {:error, :user_already_exists} = UserSupervisor.start_child("some-another-server")
     end
   end
 end
