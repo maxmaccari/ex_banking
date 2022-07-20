@@ -7,7 +7,7 @@ defmodule ExBanking.User do
 
   def start_link(name) when is_binary(name) do
     case GenServer.start_link(__MODULE__, [name], name: via_tuple(name)) do
-      {:ok, _pid} -> {:ok, name}
+      {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, _pid}} -> {:error, :already_started}
     end
   end

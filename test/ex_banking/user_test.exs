@@ -17,11 +17,12 @@ defmodule ExBanking.UserTest do
 
   describe "start_link/1" do
     test "should start one server with the given name", %{name: name} do
-      assert {:ok, ^name} = User.start_link(name)
+      assert {:ok, pid} = User.start_link(name)
+      assert name |> User.via_tuple() |> GenServer.whereis() == pid
     end
 
     test "should not start two servers with the same name", %{name: name} do
-      assert {:ok, ^name} = User.start_link(name)
+      assert {:ok, _} = User.start_link(name)
       assert {:error, :already_started} = User.start_link(name)
     end
 
@@ -75,7 +76,7 @@ defmodule ExBanking.UserTest do
 
       stop(name)
 
-      assert {:ok, ^name} = User.start_link(name)
+      assert {:ok, _} = User.start_link(name)
       assert {:ok, 100.0} = User.balance(name, "USD")
     end
   end
@@ -112,7 +113,7 @@ defmodule ExBanking.UserTest do
 
       stop(name)
 
-      assert {:ok, ^name} = User.start_link(name)
+      assert {:ok, _} = User.start_link(name)
       assert {:ok, 50.0} = User.balance(name, "USD")
     end
   end
@@ -191,10 +192,10 @@ defmodule ExBanking.UserTest do
       stop(from)
       stop(to)
 
-      assert {:ok, ^from} = User.start_link(from)
+      assert {:ok, _} = User.start_link(from)
       assert {:ok, 150.0} = User.balance(from, "USD")
 
-      assert {:ok, ^to} = User.start_link(to)
+      assert {:ok, _} = User.start_link(to)
       assert {:ok, 100.0} = User.balance(to, "USD")
     end
   end

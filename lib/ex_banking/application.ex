@@ -10,7 +10,8 @@ defmodule ExBanking.Application do
     init_user_server_store()
 
     children = [
-      {Registry, keys: :unique, name: ExBanking.UserRegistry}
+      {Registry, keys: :unique, name: ExBanking.UserRegistry},
+      ExBanking.UserSupervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
