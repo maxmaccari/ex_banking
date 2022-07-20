@@ -18,33 +18,25 @@ defmodule ExBanking.User do
     {:via, Registry, {ExBanking.UserRegistry, name}}
   end
 
-  # FOR THE EVALUATORS:
-  # I understand that there's the phrase "let it crash", return that the user
-  # does not exist is part of the business logic, and catch :exit in this case
-  # is a good way to transform one error into a friendly error returning.
-
   def balance(name, currency) when is_binary(name) and is_binary(currency) do
-    GenServer.call(via_tuple(name), {:balance, currency})
-  catch
-    :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
+    with :ok <- check_user(name),
+         do: GenServer.call(via_tuple(name), {:balance, currency})
   end
 
   def balance(_name, _currency), do: {:error, :wrong_arguments}
 
   def deposit(name, amount, currency)
       when is_binary(name) and is_binary(currency) and is_number(amount) do
-    GenServer.call(via_tuple(name), {:deposit, amount, currency})
-  catch
-    :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
+    with :ok <- check_user(name),
+         do: GenServer.call(via_tuple(name), {:deposit, amount, currency})
   end
 
   def deposit(_name, _amount, _currency), do: {:error, :wrong_arguments}
 
   def withdraw(name, amount, currency)
       when is_binary(name) and is_binary(currency) and is_number(amount) do
-    GenServer.call(via_tuple(name), {:withdraw, amount, currency})
-  catch
-    :exit, {:noproc, {GenServer, :call, _}} -> {:error, :user_does_not_exist}
+    with :ok <- check_user(name),
+         do: GenServer.call(via_tuple(name), {:withdraw, amount, currency})
   end
 
   def withdraw(_name, _amount, _currency), do: {:error, :wrong_arguments}
@@ -53,9 +45,11 @@ defmodule ExBanking.User do
 
   def send(from, to, amount, currency, deposit_fun)
       when is_binary(from) and is_binary(to) and is_binary(currency) and is_number(amount) do
-    GenServer.call(via_tuple(from), {:send, to, amount, currency, deposit_fun})
-  catch
-    :exit, {:noproc, {GenServer, :call, _}} -> {:error, :sender_does_not_exist}
+    case check_user(from) do
+      :ok -> GenServer.call(via_tuple(from), {:send, to, amount, currency, deposit_fun})
+      {:error, :too_many_requests_to_user} -> {:error, :too_many_requests_to_sender}
+      {:error, :user_does_not_exist} -> {:error, :sender_does_not_exist}
+    end
   end
 
   def send(_from, _to, _amount, _currency, _fun), do: {:error, :wrong_arguments}
@@ -100,6 +94,10 @@ defmodule ExBanking.User do
 
   defp handle_send_error(:not_enough_money), do: {:error, :not_enough_money}
   defp handle_send_error({:error, :user_does_not_exist}), do: {:error, :receiver_does_not_exist}
+
+  defp handle_send_error({:error, :too_many_requests_to_user}),
+    do: {:error, :too_many_requests_to_receiver}
+
   defp handle_send_error(error), do: error
 
   @impl true
@@ -114,7 +112,19 @@ defmodule ExBanking.User do
     {:noreply, current_user}
   end
 
-  def backup_user(user) do
+  defp backup_user(user) do
     :ets.insert(__MODULE__, {user.name, user})
+  end
+
+  defp check_user(name) do
+    case name |> via_tuple() |> GenServer.whereis() do
+      nil ->
+        {:error, :user_does_not_exist}
+
+      pid ->
+        {:message_queue_len, len} = :erlang.process_info(pid, :message_queue_len)
+
+        if len > 10, do: {:error, :too_many_requests_to_user}, else: :ok
+    end
   end
 end
