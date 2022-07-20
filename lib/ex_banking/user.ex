@@ -59,13 +59,16 @@ defmodule ExBanking.User do
 
   def handle_call({:deposit, currency, amount}, _from, user) do
     user = UserInfo.deposit(user, currency, amount)
-    {:reply, {:ok, UserInfo.balance(user, currency)}, user, {:continue, :backup_user}}
+    backup_user(user)
+
+    {:reply, {:ok, UserInfo.balance(user, currency)}, user}
   end
 
   def handle_call({:withdraw, currency, amount}, _from, user) do
     case UserInfo.withdraw(user, currency, amount) do
       %UserInfo{} = user ->
-        {:reply, {:ok, UserInfo.balance(user, currency)}, user, {:continue, :backup_user}}
+        backup_user(user)
+        {:reply, {:ok, UserInfo.balance(user, currency)}, user}
 
       :not_enough_money ->
         {:reply, {:error, :not_enough_money}, user}
@@ -75,8 +78,8 @@ defmodule ExBanking.User do
   def handle_call({:send, to, currency, amount, deposit_fun}, _from, user) do
     with %UserInfo{} = new_user <- UserInfo.withdraw(user, currency, amount),
          {:ok, to_user_balance} <- deposit_fun.(to, currency, amount) do
-      {:reply, {:ok, UserInfo.balance(new_user, currency), to_user_balance}, new_user,
-       {:continue, :backup_user}}
+      backup_user(new_user)
+      {:reply, {:ok, UserInfo.balance(new_user, currency), to_user_balance}, new_user}
     else
       error -> {:reply, handle_send_error(error), user}
     end
@@ -98,9 +101,7 @@ defmodule ExBanking.User do
     {:noreply, current_user}
   end
 
-  def handle_continue(:backup_user, user) do
+  def backup_user(user) do
     :ets.insert(__MODULE__, {user.name, user})
-
-    {:noreply, user}
   end
 end
