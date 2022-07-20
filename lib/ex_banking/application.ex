@@ -7,14 +7,20 @@ defmodule ExBanking.Application do
 
   @impl true
   def start(_type, _args) do
+    init_user_server_store()
+
     children = [
-      # Starts a worker by calling: ExBanking.Worker.start_link(arg)
-      # {ExBanking.Worker, arg}
+      {Registry, keys: :unique, name: ExBanking.UserRegistry},
+      ExBanking.UserSupervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ExBanking.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp init_user_server_store do
+    :ets.new(ExBanking.User, [:public, :named_table])
   end
 end

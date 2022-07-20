@@ -1,4 +1,4 @@
-defmodule ExBanking.User.Account do
+defmodule ExBanking.UserInfo.Account do
   @moduledoc false
 
   # FOR THE EVALUATORS:
@@ -21,7 +21,7 @@ defmodule ExBanking.User.Account do
   def new(currency, amount \\ 0) do
     %__MODULE__{
       balance: to_decimal(amount),
-      currency: String.upcase(currency)
+      currency: currency
     }
   end
 
@@ -39,7 +39,7 @@ defmodule ExBanking.User.Account do
     if Decimal.positive?(new_balance) do
       %{account | balance: new_balance}
     else
-      :insuficient_funds
+      :not_enough_money
     end
   end
 

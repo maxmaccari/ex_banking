@@ -1,14 +1,14 @@
-defmodule ExBanking.User.AccountTest do
-  use ExUnit.Case
+defmodule ExBanking.UserInfo.AccountTest do
+  use ExUnit.Case, async: true
 
-  alias ExBanking.User.Account
+  alias ExBanking.UserInfo.Account
 
   describe "new/1" do
     test "should create a new account with the given currency" do
       assert %Account{
                currency: "USD",
                balance: %Decimal{}
-             } = Account.new("usd")
+             } = Account.new("USD")
     end
 
     test "should create a new account with the given currency and initial balance" do
@@ -17,7 +17,7 @@ defmodule ExBanking.User.AccountTest do
       assert %Account{
                currency: "USD",
                balance: ^expected_balance
-             } = Account.new("usd", 100)
+             } = Account.new("USD", 100)
     end
   end
 
@@ -53,7 +53,7 @@ defmodule ExBanking.User.AccountTest do
     end
 
     test "should return error when balance is not available" do
-      assert :insuficient_funds = Account.withdraw(@account, 120.0)
+      assert :not_enough_money = Account.withdraw(@account, 120.0)
     end
 
     test "should work with integer" do
