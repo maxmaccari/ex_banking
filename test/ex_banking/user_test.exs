@@ -24,6 +24,10 @@ defmodule ExBanking.UserTest do
       assert {:ok, ^name} = User.start_link(name)
       assert {:error, :already_started} = User.start_link(name)
     end
+
+    test "should return :wrong_arguments error if start with non binary name" do
+      assert {:error, :wrong_arguments} = User.start_link(%{})
+    end
   end
 
   describe "balance/2" do
@@ -165,6 +169,16 @@ defmodule ExBanking.UserTest do
 
       assert {:error, :sender_does_not_exist} = User.send(from, to, "USD", 100)
       assert {:ok, 0.0} = User.balance(to, "USD")
+    end
+
+    test "should return any receiver error from deposit_fun arg", %{from: from, to: to} do
+      {:ok, _} = User.start_link(from)
+      {:ok, _} = User.start_link(to)
+
+      User.deposit(from, "USD", 250)
+
+      assert {:error, :error_from_receiver} =
+               User.send(from, to, "USD", 100, fn _, _, _ -> {:error, :error_from_receiver} end)
     end
 
     test "should store the state into ETS in case of server restarts", %{from: from, to: to} do

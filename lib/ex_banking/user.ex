@@ -5,13 +5,14 @@ defmodule ExBanking.User do
 
   alias ExBanking.UserInfo
 
-  def start_link(name) do
+  def start_link(name) when is_binary(name) do
     case GenServer.start_link(__MODULE__, [name], name: via_tuple(name)) do
       {:ok, _pid} -> {:ok, name}
       {:error, {:already_started, _pid}} -> {:error, :already_started}
-      error -> error
     end
   end
+
+  def start_link(_name), do: {:error, :wrong_arguments}
 
   def via_tuple(name) do
     {:via, Registry, {ExBanking.UserRegistry, name}}
