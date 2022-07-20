@@ -37,6 +37,25 @@ jobs:
       run: mix compile
     - name: Run tests and coverage
       run: mix coveralls
+    - name: Extract Coverage Stats
+      run: |
+        COVERALLS_OUTPUT=$(mix coveralls)
+        COVERAGE=$(echo $COVERALLS_OUTPUT | grep "\[TOTAL\]" | grep -Po "[0-9]+\.[0-9]*%")
+        COVERAGE_COLOR=$(echo $COVERAGE | grep -Po "^[0-9]+")
+        echo "COVERAGE=$(echo $COVERAGE | cut -c 1-6)" >> $GITHUB_ENV
+        echo "COVERAGE_COLOR=$(echo $COVERAGE_COLOR | cut -c 1-6)" >> $GITHUB_ENV
+    - name: Create Coverage Badge
+      uses: schneegans/dynamic-badges-action@v1.3.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: ${{ secrets.GIST_ID }}
+        filename: ex_banking_coverage.json
+        label: Coverage
+        namedLogo: coveralls.svg
+        message: ${{ env.COVERAGE }}
+        valColorRange: ${{ env.COVERAGE_COLOR }}
+        maxColorRange: 100
+        minColorRange: 50
     - uses: actions/upload-artifact@v3
       with:
         name: coverage
