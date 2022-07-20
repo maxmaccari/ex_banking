@@ -1,5 +1,5 @@
 defmodule ExBanking.UserInfoTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias ExBanking.UserInfo
   alias ExBanking.UserInfo.Account
