@@ -71,14 +71,14 @@ defmodule ExBanking.User do
   end
 
   def handle_call({:deposit, amount, currency}, _from, user) do
-    user = UserInfo.deposit(user, currency, amount)
+    user = UserInfo.deposit(user, amount, currency)
     backup_user(user)
 
     {:reply, {:ok, UserInfo.balance(user, currency)}, user}
   end
 
   def handle_call({:withdraw, amount, currency}, _from, user) do
-    case UserInfo.withdraw(user, currency, amount) do
+    case UserInfo.withdraw(user, amount, currency) do
       %UserInfo{} = user ->
         backup_user(user)
         {:reply, {:ok, UserInfo.balance(user, currency)}, user}
@@ -89,7 +89,7 @@ defmodule ExBanking.User do
   end
 
   def handle_call({:send, to, amount, currency, deposit_fun}, _from, user) do
-    with %UserInfo{} = new_user <- UserInfo.withdraw(user, currency, amount),
+    with %UserInfo{} = new_user <- UserInfo.withdraw(user, amount, currency),
          {:ok, to_user_balance} <- deposit_fun.(to, amount, currency) do
       backup_user(new_user)
       {:reply, {:ok, UserInfo.balance(new_user, currency), to_user_balance}, new_user}
