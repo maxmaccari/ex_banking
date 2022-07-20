@@ -5,6 +5,7 @@ defmodule ExBanking.User do
 
   alias ExBanking.UserInfo
 
+  @spec start_link(String.t()) :: {:error, :user_already_exists | :wrong_arguments} | {:ok, pid}
   def start_link(name) when is_binary(name) do
     case GenServer.start_link(__MODULE__, [name], name: via_tuple(name)) do
       {:ok, pid} -> {:ok, pid}
@@ -14,10 +15,13 @@ defmodule ExBanking.User do
 
   def start_link(_name), do: {:error, :wrong_arguments}
 
+  @spec via_tuple(any) :: {:via, Registry, {ExBanking.UserRegistry, String.t()}}
   def via_tuple(name) do
     {:via, Registry, {ExBanking.UserRegistry, name}}
   end
 
+  @spec balance(String.t(), String.t()) ::
+          {:ok, number} | {:error, :user_does_not_exist | :too_many_requests_to_user}
   def balance(name, currency) when is_binary(name) and is_binary(currency) do
     with :ok <- check_user(name),
          do: GenServer.call(via_tuple(name), {:balance, currency})
@@ -25,6 +29,8 @@ defmodule ExBanking.User do
 
   def balance(_name, _currency), do: {:error, :wrong_arguments}
 
+  @spec deposit(String.t(), number, String.t()) ::
+          {:ok, number} | {:error, :user_does_not_exist | :too_many_requests_to_user}
   def deposit(name, amount, currency)
       when is_binary(name) and is_binary(currency) and is_number(amount) do
     with :ok <- check_user(name),
@@ -33,6 +39,9 @@ defmodule ExBanking.User do
 
   def deposit(_name, _amount, _currency), do: {:error, :wrong_arguments}
 
+  @spec withdraw(String.t(), number, String.t()) ::
+          {:ok, number}
+          | {:error, :not_enough_money | :user_does_not_exist | :too_many_requests_to_user}
   def withdraw(name, amount, currency)
       when is_binary(name) and is_binary(currency) and is_number(amount) do
     with :ok <- check_user(name),
@@ -41,6 +50,14 @@ defmodule ExBanking.User do
 
   def withdraw(_name, _amount, _currency), do: {:error, :wrong_arguments}
 
+  @spec send(String.t(), String.t(), number, String.t(), fun) ::
+          {:ok, number, number}
+          | {:error,
+             :not_enough_money
+             | :sender_does_not_exist
+             | :receiver_does_not_exist
+             | :too_many_requests_to_sender
+             | :too_many_requests_to_receiver}
   def send(from, to, amount, currency, deposit_fun \\ &deposit/3)
 
   def send(from, to, amount, currency, deposit_fun)

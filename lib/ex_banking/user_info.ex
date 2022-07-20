@@ -1,9 +1,5 @@
 defmodule ExBanking.UserInfo do
-  @moduledoc """
-  The UserInfo structure.
-
-  This structure handle accounts and it currencies.
-  """
+  @moduledoc false
 
   defstruct name: nil, accounts: %{}
 
