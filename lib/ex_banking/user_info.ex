@@ -41,7 +41,7 @@ defmodule ExBanking.UserInfo do
 
   @spec withdraw(t(), number, String.t()) :: :not_enough_money | t()
   def withdraw(%__MODULE__{accounts: accounts} = user, amount, currency) do
-    account = Map.get(accounts, currency, currency)
+    account = Map.get(accounts, currency, Account.new(currency))
 
     case Account.withdraw(account, amount) do
       %Account{} = account ->

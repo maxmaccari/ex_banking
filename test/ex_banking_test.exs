@@ -59,6 +59,48 @@ defmodule ExBankingTest do
     end
   end
 
+  describe "send/4" do
+    test "should send the money from one user to another user" do
+      from = random_name()
+      to = random_name()
+
+      ExBanking.create_user(from)
+      ExBanking.deposit(from, 250, "USD")
+
+      ExBanking.create_user(to)
+
+      assert {:ok, 150.0, 100.0} = ExBanking.send(from, to, 100, "USD")
+      assert {:ok, 150.0} = ExBanking.get_balance(from, "USD")
+      assert {:ok, 100.0} = ExBanking.get_balance(to, "USD")
+    end
+
+    test "should not send the the money in case of not enought money" do
+      from = random_name()
+      to = random_name()
+
+      ExBanking.create_user(from)
+      ExBanking.deposit(from, 50, "USD")
+
+      ExBanking.create_user(to)
+
+      assert {:error, :not_enough_money} = ExBanking.send(from, to, 100, "USD")
+      assert {:ok, 50.0} = ExBanking.get_balance(from, "USD")
+      assert {:ok, 0.0} = ExBanking.get_balance(to, "USD")
+    end
+
+    test "should not send the the money in case of one of them does't exist" do
+      from = random_name()
+      to = random_name()
+
+      ExBanking.create_user(from)
+      ExBanking.deposit(from, 250, "USD")
+      ExBanking.create_user(to)
+
+      assert {:error, :sender_does_not_exist} = ExBanking.send("invalid", to, 100, "USD")
+      assert {:error, :receiver_does_not_exist} = ExBanking.send(from, "invalid", 100, "USD")
+    end
+  end
+
   defp random_name do
     20
     |> :rand.bytes()
