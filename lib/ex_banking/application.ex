@@ -20,6 +20,6 @@ defmodule ExBanking.Application do
   end
 
   defp init_user_server_store do
-    :ets.new(ExBanking.UserServer, [:public, :named_table])
+    :ets.new(ExBanking.User, [:public, :named_table])
   end
 end

@@ -1,4 +1,6 @@
-defmodule ExBanking.UserServer do
+defmodule ExBanking.User do
+  @moduledoc false
+
   use GenServer
 
   alias ExBanking.UserInfo
@@ -86,17 +88,17 @@ defmodule ExBanking.UserServer do
   @impl true
   def handle_continue({:load_user, name}, default_user) do
     current_user =
-      case :ets.lookup(ExBanking.UserServer, name) do
+      case :ets.lookup(__MODULE__, name) do
         [] -> default_user
         [{_key, user}] -> user
       end
 
-    :ets.insert(ExBanking.UserServer, {name, current_user})
+    :ets.insert(__MODULE__, {name, current_user})
     {:noreply, current_user}
   end
 
   def handle_continue(:backup_user, user) do
-    :ets.insert(ExBanking.UserServer, {user.name, user})
+    :ets.insert(__MODULE__, {user.name, user})
 
     {:noreply, user}
   end
