@@ -23,10 +23,10 @@ defmodule ExBanking.UserTest do
 
     test "should not start two servers with the same name", %{name: name} do
       assert {:ok, _} = User.start_link(name)
-      assert {:error, :already_started} = User.start_link(name)
+      assert {:error, :user_already_exists} = User.start_link(name)
     end
 
-    test "should return :wrong_arguments error if start with non binary name" do
+    test "should return :wrong_arguments error if start with non string name" do
       assert {:error, :wrong_arguments} = User.start_link(%{})
     end
   end
@@ -43,14 +43,20 @@ defmodule ExBanking.UserTest do
     test "should show error if user does not exist" do
       assert {:error, :user_does_not_exist} = User.balance(@name, "USD")
     end
+
+    test "should return :wrong_arguments error with non string name or currency", %{name: name} do
+      {:ok, _} = User.start_link(name)
+      assert {:error, :wrong_arguments} = User.balance(123, "USD")
+      assert {:error, :wrong_arguments} = User.balance(name, 123)
+    end
   end
 
   describe "deposit/3" do
     test "should increment the balance of the server", %{name: name} do
       {:ok, _} = User.start_link(name)
 
-      assert {:ok, 100.0} = User.deposit(name, "USD", 100)
-      assert {:ok, 150.0} = User.deposit(name, "USD", 50)
+      assert {:ok, 100.0} = User.deposit(name, 100, "USD")
+      assert {:ok, 150.0} = User.deposit(name, 50, "USD")
 
       assert {:ok, 150.0} = User.balance(name, "USD")
       assert {:ok, 0.0} = User.balance(name, "GBP")
@@ -59,20 +65,27 @@ defmodule ExBanking.UserTest do
     test "should deposit in one balance not affect deposit in another balance", %{name: name} do
       {:ok, _} = User.start_link(name)
 
-      assert {:ok, 100.0} = User.deposit(name, "USD", 100)
-      assert {:ok, 150.0} = User.deposit(name, "GBP", 150)
+      assert {:ok, 100.0} = User.deposit(name, 100, "USD")
+      assert {:ok, 150.0} = User.deposit(name, 150, "GBP")
       assert {:ok, 100.0} = User.balance(name, "USD")
       assert {:ok, 150.0} = User.balance(name, "GBP")
     end
 
     test "should show error if user does not exist", %{name: name} do
-      assert {:error, :user_does_not_exist} = User.deposit(name, "USD", 100)
+      assert {:error, :user_does_not_exist} = User.deposit(name, 100, "USD")
+    end
+
+    test "should return :wrong_arguments error with invalid argument types", %{name: name} do
+      {:ok, _} = User.start_link(name)
+      assert {:error, :wrong_arguments} = User.deposit(123, 100, "USD")
+      assert {:error, :wrong_arguments} = User.deposit(name, "100", "USD")
+      assert {:error, :wrong_arguments} = User.deposit(name, 100, 123)
     end
 
     test "should store the state into ETS in case of server restarts", %{name: name} do
       {:ok, _} = User.start_link(name)
 
-      User.deposit(name, "USD", 100)
+      User.deposit(name, 100, "USD")
 
       stop(name)
 
@@ -84,10 +97,10 @@ defmodule ExBanking.UserTest do
   describe "withdraw/3" do
     test "should decrement the balance of the server", %{name: name} do
       {:ok, _} = User.start_link(name)
-      User.deposit(name, "USD", 200)
+      User.deposit(name, 200, "USD")
 
-      assert {:ok, 100.0} = User.withdraw(name, "USD", 100)
-      assert {:ok, 50.0} = User.withdraw(name, "USD", 50)
+      assert {:ok, 100.0} = User.withdraw(name, 100, "USD")
+      assert {:ok, 50.0} = User.withdraw(name, 50, "USD")
       assert {:ok, 50.0} = User.balance(name, "USD")
     end
 
@@ -95,21 +108,28 @@ defmodule ExBanking.UserTest do
       name: name
     } do
       {:ok, _} = User.start_link(name)
-      User.deposit(name, "USD", 100)
+      User.deposit(name, 100, "USD")
 
-      assert {:error, :not_enough_money} = User.withdraw(name, "USD", 150)
+      assert {:error, :not_enough_money} = User.withdraw(name, 150, "USD")
       assert {:ok, 100.0} = User.balance(name, "USD")
     end
 
     test "should show error if user does not exist", %{name: name} do
-      assert {:error, :user_does_not_exist} = User.withdraw(name, "USD", 100)
+      assert {:error, :user_does_not_exist} = User.withdraw(name, 100, "USD")
+    end
+
+    test "should return :wrong_arguments error with invalid argument types", %{name: name} do
+      {:ok, _} = User.start_link(name)
+      assert {:error, :wrong_arguments} = User.withdraw(123, 100, "USD")
+      assert {:error, :wrong_arguments} = User.withdraw(name, "100", "USD")
+      assert {:error, :wrong_arguments} = User.withdraw(name, 100, 123)
     end
 
     test "should store the state into ETS in case of server restarts", %{name: name} do
       {:ok, _} = User.start_link(name)
 
-      User.deposit(name, "USD", 100)
-      User.withdraw(name, "USD", 50)
+      User.deposit(name, 100, "USD")
+      User.withdraw(name, 50, "USD")
 
       stop(name)
 
@@ -136,9 +156,9 @@ defmodule ExBanking.UserTest do
       {:ok, _} = User.start_link(from)
       {:ok, _} = User.start_link(to)
 
-      User.deposit(from, "USD", 250)
+      User.deposit(from, 250, "USD")
 
-      assert {:ok, 150.0, 100.0} = User.send(from, to, "USD", 100)
+      assert {:ok, 150.0, 100.0} = User.send(from, to, 100, "USD")
       assert {:ok, 150.0} = User.balance(from, "USD")
       assert {:ok, 100.0} = User.balance(to, "USD")
     end
@@ -147,9 +167,9 @@ defmodule ExBanking.UserTest do
       {:ok, _} = User.start_link(from)
       {:ok, _} = User.start_link(to)
 
-      User.deposit(from, "USD", 50)
+      User.deposit(from, 50, "USD")
 
-      assert {:error, :not_enough_money} = User.send(from, to, "USD", 100)
+      assert {:error, :not_enough_money} = User.send(from, to, 100, "USD")
       assert {:ok, 50.0} = User.balance(from, "USD")
       assert {:ok, 0.0} = User.balance(to, "USD")
     end
@@ -158,9 +178,9 @@ defmodule ExBanking.UserTest do
       {:ok, _} = User.start_link(from)
       to = "inexistent_to"
 
-      User.deposit(from, "USD", 250)
+      User.deposit(from, 250, "USD")
 
-      assert {:error, :receiver_does_not_exist} = User.send(from, to, "USD", 100)
+      assert {:error, :receiver_does_not_exist} = User.send(from, to, 100, "USD")
       assert {:ok, 250.0} = User.balance(from, "USD")
     end
 
@@ -168,7 +188,7 @@ defmodule ExBanking.UserTest do
       from = "inexistent_from"
       {:ok, _} = User.start_link(to)
 
-      assert {:error, :sender_does_not_exist} = User.send(from, to, "USD", 100)
+      assert {:error, :sender_does_not_exist} = User.send(from, to, 100, "USD")
       assert {:ok, 0.0} = User.balance(to, "USD")
     end
 
@@ -176,18 +196,28 @@ defmodule ExBanking.UserTest do
       {:ok, _} = User.start_link(from)
       {:ok, _} = User.start_link(to)
 
-      User.deposit(from, "USD", 250)
+      User.deposit(from, 250, "USD")
 
       assert {:error, :error_from_receiver} =
-               User.send(from, to, "USD", 100, fn _, _, _ -> {:error, :error_from_receiver} end)
+               User.send(from, to, 100, "USD", fn _, _, _ -> {:error, :error_from_receiver} end)
+    end
+
+    test "should return :wrong_arguments error with invalid argument types", %{from: from, to: to} do
+      {:ok, _} = User.start_link(from)
+      {:ok, _} = User.start_link(to)
+
+      assert {:error, :wrong_arguments} = User.send(123, to, 100, "USD")
+      assert {:error, :wrong_arguments} = User.send(from, 123, 100, "USD")
+      assert {:error, :wrong_arguments} = User.send(from, to, "100", "USD")
+      assert {:error, :wrong_arguments} = User.send(from, to, 100, 123)
     end
 
     test "should store the state into ETS in case of server restarts", %{from: from, to: to} do
       {:ok, _} = User.start_link(from)
       {:ok, _} = User.start_link(to)
 
-      User.deposit(from, "USD", 250)
-      User.send(from, to, "USD", 100)
+      User.deposit(from, 250, "USD")
+      User.send(from, to, 100, "USD")
 
       stop(from)
       stop(to)

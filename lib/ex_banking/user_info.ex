@@ -26,8 +26,8 @@ defmodule ExBanking.UserInfo do
     |> Account.balance()
   end
 
-  @spec deposit(t(), String.t(), number) :: t()
-  def deposit(%__MODULE__{accounts: accounts} = user, currency, amount) do
+  @spec deposit(t(), number, String.t()) :: t()
+  def deposit(%__MODULE__{accounts: accounts} = user, amount, currency) do
     accounts =
       Map.update(
         accounts,
@@ -39,9 +39,9 @@ defmodule ExBanking.UserInfo do
     %{user | accounts: accounts}
   end
 
-  @spec withdraw(t(), String.t(), number) :: :not_enough_money | t()
-  def withdraw(%__MODULE__{accounts: accounts} = user, currency, amount) do
-    account = Map.get(accounts, currency, currency)
+  @spec withdraw(t(), number, String.t()) :: :not_enough_money | t()
+  def withdraw(%__MODULE__{accounts: accounts} = user, amount, currency) do
+    account = Map.get(accounts, currency, Account.new(currency))
 
     case Account.withdraw(account, amount) do
       %Account{} = account ->

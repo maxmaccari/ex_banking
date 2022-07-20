@@ -36,7 +36,7 @@ defmodule ExBanking.UserInfo.Account do
   def withdraw(%__MODULE__{balance: balance} = account, amount) do
     new_balance = Decimal.sub(balance, normalize_amount(amount))
 
-    if Decimal.positive?(new_balance) do
+    if Decimal.eq?(new_balance, 0) or Decimal.positive?(new_balance) do
       %{account | balance: new_balance}
     else
       :not_enough_money
